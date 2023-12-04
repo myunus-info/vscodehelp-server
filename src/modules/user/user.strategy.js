@@ -2,7 +2,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const { Strategy } = require('passport-jwt');
-const User = require(path.join(process.cwd(), 'src/modules/user/user.model'));
+const User = require(path.join(process.cwd(), 'src/modules/user/models/user.model'));
 const nodeCache = require(path.join(process.cwd(), 'src/config/lib/nodecache'));
 
 module.exports = () => {
