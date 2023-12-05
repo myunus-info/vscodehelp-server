@@ -1,24 +1,14 @@
 const path = require('path');
-const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const { Strategy } = require('passport-jwt');
 const User = require(path.join(process.cwd(), 'src/modules/user/models/user.model'));
 const nodeCache = require(path.join(process.cwd(), 'src/config/lib/nodecache'));
 
 module.exports = () => {
-  const isTokenValid = token => {
-    return jwt.verify(token, nodeCache.getValue('JWT_SECRET'));
-  };
-
   const cookieExtractor = req => {
     let token = null;
     if (req && req.signedCookies) {
-      const { accessToken, refreshToken } = req.signedCookies;
-      if (isTokenValid(accessToken)) {
-        token = accessToken;
-      } else {
-        token = refreshToken;
-      }
+      token = req.signedCookies['accessToken'];
     }
     return token;
   };

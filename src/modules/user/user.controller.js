@@ -3,6 +3,7 @@ const { generateAccessToken } = require(path.join(process.cwd(), 'src/modules/us
 const { asyncHandler, AppError } = require(path.join(process.cwd(), 'src/modules/core/errors'));
 const User = require('./models/user.model');
 const OTPModel = require('./models/OTP.model');
+const UserDetail = require('./models/userDetails.model');
 const generateOTP = require('../core/utils/generateOTP');
 const Email = require('../../config/lib/nodemailer');
 
@@ -30,7 +31,7 @@ const register = asyncHandler(async (req, res, next) => {
     // Create OTP
     OTPData = await OTPModel.create({
       OTP,
-      OTPExpires: Date.now() + 5 * 60 * 1000,
+      OTPExpires: Date.now() + 60 * 60 * 1000,
       user: newUser._id,
     });
   } catch (error) {
@@ -74,8 +75,8 @@ const verifyOTP = asyncHandler(async (req, res, next) => {
   }
 
   const user = await existingOTP.populate('user');
-  await existingOTP.deleteOne();
-  const accessToken = generateAccessToken(user);
+  // await existingOTP.deleteOne();
+  const accessToken = generateAccessToken(user.user);
 
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
@@ -92,7 +93,41 @@ const verifyOTP = asyncHandler(async (req, res, next) => {
   });
 });
 
+const registerUserDetails = asyncHandler(async (req, res, next) => {
+  const { firstName, lastName, address, state, zipCode, city } = req.body;
+
+  const existingUserDetails = await UserDetail.findOne({ user: req.user._id });
+
+  if (existingUserDetails) {
+    return next(new AppError(400, 'User details already exist!'));
+  }
+
+  let userInfo;
+  try {
+    userInfo = await UserDetail.create({
+      firstName,
+      lastName,
+      address,
+      state,
+      zipCode,
+      city,
+      user: req.user._id,
+    });
+  } catch (error) {
+    return next(new AppError(500, `${error.name}: ${error.message}`));
+  }
+
+  const userDetails = await userInfo.populate('user');
+
+  res.status(201).json({
+    status: 'success',
+    message: 'User details registered successfully!',
+    userDetails,
+  });
+});
+
 module.exports = {
   register,
   verifyOTP,
+  registerUserDetails,
 };
