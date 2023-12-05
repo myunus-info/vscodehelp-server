@@ -4,6 +4,7 @@ const { asyncHandler, AppError } = require(path.join(process.cwd(), 'src/modules
 const User = require('./models/user.model');
 const OTPModel = require('./models/OTP.model');
 const generateOTP = require('../core/utils/generateOTP');
+const Email = require('../../config/lib/nodemailer');
 
 const register = asyncHandler(async (req, res, next) => {
   const { username, email, country, mobileNumber, password, confirmPassword } = req.body;
@@ -15,6 +16,7 @@ const register = asyncHandler(async (req, res, next) => {
   const OTP = generateOTP();
   let newUser;
   let OTPData;
+  // Register User
   try {
     newUser = await User.create({
       username,
@@ -24,6 +26,8 @@ const register = asyncHandler(async (req, res, next) => {
       password,
       confirmPassword,
     });
+
+    // Create OTP
     OTPData = await OTPModel.create({
       OTP,
       OTPExpires: Date.now() + 5 * 60 * 1000,
@@ -31,6 +35,17 @@ const register = asyncHandler(async (req, res, next) => {
     });
   } catch (error) {
     return next(new AppError(500, 'Internal server error!'));
+  }
+
+  // Send OTP through email
+  try {
+    await new Email({
+      email: newUser.email,
+      username: newUser.username,
+      otp: OTP,
+    }).send();
+  } catch (error) {
+    return next(new AppError(500, `${error.name}: ${error.message}`));
   }
 
   res.status(201).json({
