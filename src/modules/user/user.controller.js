@@ -31,7 +31,7 @@ const register = asyncHandler(async (req, res, next) => {
     // Create OTP
     OTPData = await OTPModel.create({
       OTP,
-      OTPExpires: Date.now() + 60 * 60 * 1000,
+      OTPExpires: Date.now() + 5 * 60 * 1000,
       user: newUser._id,
     });
   } catch (error) {
@@ -59,6 +59,39 @@ const register = asyncHandler(async (req, res, next) => {
   });
 });
 
+const login = asyncHandler(async (req, res, next) => {
+  const { identifier, password } = req.body;
+
+  if (!identifier || !password) {
+    return next(new AppError(400, 'Please provide your credentials!'));
+  }
+
+  const user = await User.findOne({
+    $or: [{ username: identifier }, { email: identifier }],
+  });
+
+  if (!user) {
+    return next(new AppError(401, 'Invalid credentials!'));
+  }
+
+  if (!(await user.comparePassword(password))) {
+    return next(new AppError(401, 'Invalid credentials!'));
+  }
+
+  const accessToken = generateAccessToken(user);
+
+  res.cookie('accessToken', accessToken, { httpOnly: true, signed: true });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'User logged in successfully!',
+    data: {
+      user,
+      accessToken,
+    },
+  });
+});
+
 const verifyOTP = asyncHandler(async (req, res, next) => {
   const { OTP } = req.body;
 
@@ -75,7 +108,6 @@ const verifyOTP = asyncHandler(async (req, res, next) => {
   }
 
   const user = await existingOTP.populate('user');
-  // await existingOTP.deleteOne();
   const accessToken = generateAccessToken(user.user);
 
   res.cookie('accessToken', accessToken, {
@@ -130,4 +162,5 @@ module.exports = {
   register,
   verifyOTP,
   registerUserDetails,
+  login,
 };
