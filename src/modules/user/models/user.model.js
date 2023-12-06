@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide your country name!'],
     unique: [true, 'This mobile number already exists!'],
+    validate: {
+      validator: function (value) {
+        const phoneRegex = /^\+\d{1,4}\s?(\d{1,})$/;
+        return phoneRegex.test(value);
+      },
+      message: 'Please provide a valid mobile number with country code!',
+    },
   },
   password: {
     type: String,
