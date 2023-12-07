@@ -16,7 +16,6 @@ const register = asyncHandler(async (req, res, next) => {
 
   const OTP = generateOTP();
   let newUser;
-  let OTPData;
   // Register User
   try {
     newUser = await User.create({
@@ -29,9 +28,9 @@ const register = asyncHandler(async (req, res, next) => {
     });
 
     // Create OTP
-    OTPData = await OTPModel.create({
+    await OTPModel.create({
       OTP,
-      OTPExpires: Date.now() + 5 * 60 * 1000,
+      OTPExpires: Date.now() + 60 * 60 * 1000,
       user: newUser._id,
     });
   } catch (error) {
@@ -46,7 +45,7 @@ const register = asyncHandler(async (req, res, next) => {
       otp: OTP,
     }).send();
   } catch (error) {
-    return next(new AppError(500, `${error.name}: ${error.message}`));
+    return next(new AppError(500, `${error.message}`));
   }
 
   const accessToken = generateAccessToken(newUser);
@@ -56,11 +55,9 @@ const register = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     status: 'success',
     message: 'User created successfully',
-
     data: {
       user: newUser,
       accessToken,
-      OTPData,
     },
   });
 });

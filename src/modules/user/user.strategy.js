@@ -7,8 +7,8 @@ const nodeCache = require(path.join(process.cwd(), 'src/config/lib/nodecache'));
 module.exports = () => {
   const cookieExtractor = req => {
     let token = null;
-    if (req && req.signedCookies) {
-      token = req.signedCookies['accessToken'];
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split('Bearer ')[1];
     }
     return token;
   };
