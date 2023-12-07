@@ -35,7 +35,7 @@ const register = asyncHandler(async (req, res, next) => {
       user: newUser._id,
     });
   } catch (error) {
-    return next(new AppError(500, 'Internal server error!'));
+    return next(new AppError(500, `${error.message}`));
   }
 
   // Send OTP through email
@@ -49,11 +49,17 @@ const register = asyncHandler(async (req, res, next) => {
     return next(new AppError(500, `${error.name}: ${error.message}`));
   }
 
+  const accessToken = generateAccessToken(newUser);
+
+  res.cookie('accessToken', accessToken, { httpOnly: true, signed: true });
+
   res.status(201).json({
     status: 'success',
     message: 'User created successfully',
+
     data: {
       user: newUser,
+      accessToken,
       OTPData,
     },
   });
@@ -106,7 +112,7 @@ const verifyOTP = asyncHandler(async (req, res, next) => {
   if (!existingOTP) {
     return next(new AppError(400, 'OTP is invalid or has expired!'));
   }
-
+  await User.updateOne({ _id: req.user._id }, { $set: { isEmailVerified: true } });
   const user = await existingOTP.populate('user');
   const accessToken = generateAccessToken(user.user);
 

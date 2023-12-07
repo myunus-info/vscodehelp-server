@@ -56,6 +56,10 @@ const userSchema = new mongoose.Schema({
       message: 'Password confirmation does not match!',
     },
   },
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 userSchema.pre('save', async function (next) {
